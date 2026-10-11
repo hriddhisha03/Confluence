@@ -5,3 +5,4 @@ python-dotenv>=1.0
 aiokafka>=0.10
 grpcio>=1.62
 grpcio-tools>=1.62
+asyncpg>=0.29

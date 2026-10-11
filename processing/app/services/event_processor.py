@@ -1,6 +1,6 @@
 ﻿import json
 from datetime import datetime, timezone
-
+from app.services.known_keys import known_keys_cache
 from app.clients.kafka_client import commit, get_consumer, publish
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -48,8 +48,8 @@ async def process_message(message) -> None:
         await send_to_dlq(message, err)
         return
 
-    clean_event = build_clean_event(raw_event, settings.known_property_key_set)
-
+    clean_event = build_clean_event(raw_event, known_keys_cache.get())
+    
     # Phase 3 hook: when clean_event.unknown_keys is non-empty, call the
     # Intelligence service over gRPC here before publishing.
     if clean_event.unknown_keys:

@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # Property keys already in the schema. In Phase 3 this gets loaded from
     # the Postgres schema registry instead of an env var.
     known_property_keys: str = "browser,referrer"
+    
+    postgres_dsn: str = "postgresql://pipeline:pipeline@postgres:5432/schema_registry"
+    known_keys_refresh_seconds: float = 10.0
 
     @property
     def known_property_key_set(self) -> set[str]:
