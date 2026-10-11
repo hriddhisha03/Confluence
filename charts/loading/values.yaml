@@ -1,0 +1,9 @@
+﻿replicaCount: 2
+
+image:
+  repository: loading
+  tag: latest
+  pullPolicy: IfNotPresent
+
+resources: {}
+

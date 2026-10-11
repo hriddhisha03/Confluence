@@ -1,0 +1,17 @@
+﻿syntax = "proto3";
+
+package intelligence;
+
+service SchemaInference {
+  rpc InferSchema (SchemaRequest) returns (SchemaResponse);
+}
+
+message SchemaRequest {
+  string event_sample = 1;
+  repeated string unknown_keys = 2;
+}
+
+message SchemaResponse {
+  string schema_version = 1;
+  map<string, string> inferred_types = 2;
+}

@@ -1,0 +1,9 @@
+﻿replicaCount: 2
+
+image:
+  repository: intelligence
+  tag: latest
+  pullPolicy: IfNotPresent
+
+resources: {}
+

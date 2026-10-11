@@ -1,0 +1,14 @@
+roadmap - 
+1. local ingestion api
+2. kafka server hosting
+3. ingestion hosted in kubernates
+4. processing consumer
+5. Postgres server setup
+6. Metadata usage
+7. Clickhouse server setup
+8. loading 
+9. Intelligence using resful api
+10. Intelligence using GRPC (UPGRADE)
+11. Introduce caching 
+12. Introduce idempotency
+13. Grafana

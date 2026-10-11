@@ -1,0 +1,9 @@
+﻿replicaCount: 2
+
+image:
+  repository: kafka
+  tag: latest
+  pullPolicy: IfNotPresent
+
+resources: {}
+
