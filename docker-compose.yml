@@ -45,6 +45,10 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:24.3
     container_name: pipeline-clickhouse
+    environment:
+      CLICKHOUSE_USER: pipeline
+      CLICKHOUSE_PASSWORD: pipeline
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
     ports:
       - "8123:8123"
       - "9000:9000"
@@ -55,6 +59,11 @@ services:
       nofile:
         soft: 262144
         hard: 262144
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   ingestion:
     build:
@@ -83,6 +92,24 @@ services:
       kafka:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  loading:
+    build:
+      context: ./loading
+    container_name: pipeline-loading
+    env_file:
+      - ./loading/.env.example
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_USER: pipeline
+      CLICKHOUSE_PASSWORD: pipeline
+    depends_on:
+      kafka:
+        condition: service_healthy
+      clickhouse:
         condition: service_healthy
     restart: on-failure
 
