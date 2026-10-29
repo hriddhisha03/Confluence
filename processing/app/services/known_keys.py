@@ -32,6 +32,11 @@ class KnownKeysCache:
     def get(self) -> set[str]:
         return set(self._keys)
 
+    def add(self, names: set[str]) -> None:
+        """Marks keys as known right away, without waiting for the next
+        refresh. Used after Intelligence has registered them."""
+        self._keys |= set(names)
+
     async def refresh(self) -> None:
         try:
             keys = await self._loader()

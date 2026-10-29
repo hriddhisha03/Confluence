@@ -1,6 +1,7 @@
 ﻿import asyncio
 import contextlib
 
+from app.clients.intelligence_client import intelligence_client
 from app.clients.kafka_client import start_kafka, stop_kafka
 from app.clients.postgres_client import start_postgres, stop_postgres
 from app.core.config import settings
@@ -15,6 +16,7 @@ logger = get_logger(__name__)
 async def main() -> None:
     logger.info("starting_processing_service")
     await start_postgres()
+    await intelligence_client.start()
     refresh_task: asyncio.Task | None = None
     try:
         await start_kafka()
@@ -27,6 +29,7 @@ async def main() -> None:
             with contextlib.suppress(asyncio.CancelledError):
                 await refresh_task
         await stop_kafka()
+        await intelligence_client.stop()
         await stop_postgres()
 
 

@@ -68,3 +68,8 @@ async def test_newly_registered_key_stops_being_unknown():
     await cache.refresh()
     after = build_clean_event(raw, cache.get(), now=FIXED_NOW)
     assert after.unknown_keys == []
+
+def test_add_marks_keys_known_immediately():
+    cache = KnownKeysCache(loader=lambda: None, fallback={"browser"}, refresh_seconds=10)
+    cache.add({"campaign"})
+    assert cache.get() == {"browser", "campaign"}

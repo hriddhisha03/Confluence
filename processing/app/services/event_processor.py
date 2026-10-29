@@ -1,10 +1,12 @@
 ﻿import json
 from datetime import datetime, timezone
-from app.services.known_keys import known_keys_cache
+
 from app.clients.kafka_client import commit, get_consumer, publish
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.models.schemas import DeadLetterRecord
+from app.services.known_keys import known_keys_cache
+from app.services.schema_resolver import schema_resolver
 from app.services.validator import (
     EventValidationError,
     build_clean_event,
@@ -15,8 +17,6 @@ logger = get_logger(__name__)
 
 
 async def send_to_dlq(message, error: EventValidationError) -> None:
-    """Writes a failed message to dlq_events with enough context to trace
-    it back to its exact position in raw_events."""
     record = DeadLetterRecord(
         original_payload=message.value.decode("utf-8", errors="replace"),
         error_type=error.error_type,
@@ -31,17 +31,10 @@ async def send_to_dlq(message, error: EventValidationError) -> None:
         key=message.key,
         value=record.model_dump_json().encode("utf-8"),
     )
-    logger.warning(
-        "event_sent_to_dlq",
-        error_type=error.error_type,
-        partition=message.partition,
-        offset=message.offset,
-    )
+    logger.warning("event_sent_to_dlq", error_type=error.error_type, partition=message.partition, offset=message.offset)
 
 
 async def process_message(message) -> None:
-    """Parses, validates and routes one Kafka message. Every message ends up
-    on exactly one of clean_events or dlq_events."""
     try:
         raw_event = parse_raw_event(message.value)
     except EventValidationError as err:
@@ -49,15 +42,9 @@ async def process_message(message) -> None:
         return
 
     clean_event = build_clean_event(raw_event, known_keys_cache.get())
-    
-    # Phase 3 hook: when clean_event.unknown_keys is non-empty, call the
-    # Intelligence service over gRPC here before publishing.
+
     if clean_event.unknown_keys:
-        logger.info(
-            "unknown_keys_detected",
-            event_id=clean_event.event_id,
-            unknown_keys=clean_event.unknown_keys,
-        )
+        logger.info("unknown_keys_detected", event_id=clean_event.event_id, unknown_keys=clean_event.unknown_keys)
 
     await publish(
         settings.kafka_clean_events_topic,
@@ -66,21 +53,18 @@ async def process_message(message) -> None:
     )
     logger.info("event_processed", event_id=clean_event.event_id)
 
+    # Resolved after publishing so a slow Intelligence call never delays the
+    # event itself. resolve() never raises.
+    if clean_event.unknown_keys:
+        await schema_resolver.resolve(clean_event)
+
 
 async def run_consumer() -> None:
-    """Main loop. The offset is committed only after a message has been
-    routed, so a crash re-delivers it instead of losing it."""
     consumer = get_consumer()
     async for message in consumer:
         try:
             await process_message(message)
         except Exception:
-            # Unexpected failure (for example the broker rejecting a publish).
-            # Do not commit: the message will be re-delivered on restart.
-            logger.exception(
-                "unexpected_processing_error",
-                partition=message.partition,
-                offset=message.offset,
-            )
+            logger.exception("unexpected_processing_error", partition=message.partition, offset=message.offset)
             raise
         await commit()

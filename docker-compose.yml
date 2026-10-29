@@ -93,6 +93,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      intelligence:
+        condition: service_started
     restart: on-failure
 
   loading:
@@ -127,6 +129,7 @@ services:
       postgres:
         condition: service_healthy
     restart: on-failure
+
 volumes:
   kafka_data:
   postgres_data:

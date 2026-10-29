@@ -51,4 +51,28 @@ class DeadLetterRecord(BaseModel):
     source_offset: int
     failed_at: datetime  
     
-    
+class FieldResult(BaseModel):
+    name: str
+    type: str
+
+
+class RejectedField(BaseModel):
+    name: str
+    reason: str
+
+
+class InferResult(BaseModel):
+    """Response of Intelligence POST /v1/infer."""
+
+    schema_version: int
+    registered: list[FieldResult] = Field(default_factory=list)
+    existing: list[FieldResult] = Field(default_factory=list)
+    rejected: list[RejectedField] = Field(default_factory=list)
+
+
+class SchemaUpdate(BaseModel):
+    """Message published to schema_updates when new fields were registered."""
+
+    schema_version: int
+    fields: list[FieldResult]
+    emitted_at: datetime
